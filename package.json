@@ -20,7 +20,8 @@
     "logs:events": "./scripts/view-logs.sh events",
     "logs:all": "./scripts/view-logs.sh all",
     "logs:clean": "./scripts/view-logs.sh clean",
-    "test:loki": "node scripts/test-loki-api.js"
+    "test:loki": "node scripts/test-loki-api.js",
+    "ui:custom": "echo 'Custom Log UI available at http://localhost:8080'"
   },
   "keywords": [
     "kafka",

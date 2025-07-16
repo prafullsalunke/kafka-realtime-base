@@ -200,6 +200,9 @@ CONSUMER_SESSION_TIMEOUT=30000
 |---------|------|-------------|
 | Kafka | 9092 | Main Kafka broker (KRaft mode) |
 | Kafdrop UI | 9000 | Web-based Kafka management |
+| Grafana | 3000 | Log visualization and monitoring |
+| Loki | 3100 | Log aggregation and querying |
+| Custom Log UI | 8081 | Custom log viewer with Loki API |
 | Syslog-ng | 514 | Centralized logging system |
 
 ## 📊 Monitoring & Logging
@@ -212,6 +215,17 @@ Features:
 - Message browsing
 - Consumer group monitoring
 - Real-time metrics
+
+### Custom Log UI
+Access the custom log viewer at: http://localhost:8081
+
+Features:
+- Real-time log viewing with Loki API
+- LogQL query support
+- Auto-refresh capability
+- Log type filtering (normal, audit, protected)
+- Statistics dashboard
+- CORS-enabled for external integrations
 
 ### Local Log Storage
 All logs are stored locally in the `./logs/` directory:

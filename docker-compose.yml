@@ -84,6 +84,8 @@ services:
       - ./logs:/var/log:ro
       - loki-data:/loki
     restart: unless-stopped
+    networks:
+      - kafka-network
 
   grafana:
     image: grafana/grafana:10.0.0
@@ -100,7 +102,25 @@ services:
       - loki
     restart: unless-stopped
 
+  # Custom Log UI
+  custom-log-ui:
+    image: nginx:alpine
+    container_name: custom-log-ui
+    ports:
+      - "8081:80"
+    volumes:
+      - ./ui/custom-log-ui.html:/usr/share/nginx/html/index.html:ro
+      - ./ui/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - loki
+    networks:
+      - kafka-network
+    restart: unless-stopped
+
 volumes:
   grafana-storage:
   loki-data:
   loki-wal:
+
+networks:
+  kafka-network:

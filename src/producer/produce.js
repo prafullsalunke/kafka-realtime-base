@@ -13,9 +13,22 @@ const sampleEvents = [
     userId: "user_123",
     email: "user123@example.com",
     timestamp: new Date().toISOString(),
+    logType: "audit",
     metadata: {
       source: "web",
       ip: "192.168.1.100",
+    },
+  },
+  {
+    type: "user_signin",
+    userId: "user_123",
+    email: "user123@example.com",
+    timestamp: new Date().toISOString(),
+    logType: "audit",
+    metadata: {
+      source: "web",
+      ip: "192.168.1.100",
+      sessionId: "session_789",
     },
   },
   {
@@ -25,6 +38,7 @@ const sampleEvents = [
     amount: 99.99,
     currency: "USD",
     timestamp: new Date().toISOString(),
+    logType: "normal",
     metadata: {
       items: ["product_1", "product_2"],
       shipping: "express",
@@ -37,6 +51,7 @@ const sampleEvents = [
     amount: 99.99,
     status: "completed",
     timestamp: new Date().toISOString(),
+    logType: "normal",
     metadata: {
       method: "credit_card",
       processor: "stripe",
@@ -47,6 +62,7 @@ const sampleEvents = [
     productId: "product_1",
     userId: "user_123",
     timestamp: new Date().toISOString(),
+    logType: "normal",
     metadata: {
       category: "electronics",
       price: 49.99,
@@ -58,6 +74,7 @@ const sampleEvents = [
     cartId: "cart_001",
     items: ["product_1", "product_3"],
     timestamp: new Date().toISOString(),
+    logType: "normal",
     metadata: {
       totalItems: 2,
       totalValue: 89.98,

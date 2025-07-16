@@ -27,11 +27,11 @@ const logger = winston.createLogger({
   ),
   defaultMeta: { service: "kafka-node-events" },
   transports: [
-    // Write all logs to console
+    // Write all logs to console in JSON format
     new winston.transports.Console({
       format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
+        winston.format.timestamp(),
+        winston.format.json()
       ),
     }),
     // Write all logs to application.log
@@ -64,20 +64,26 @@ const protectedLogger = winston.createLogger({
   ),
   defaultMeta: { service: "kafka-node-events", logType: "protected" },
   transports: [
-    // Write protected logs to console (with redaction)
+    // Write protected logs to console in JSON format (with redaction)
     new winston.transports.Console({
       format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.printf(({ timestamp, level, message, ...meta }) => {
-          // Redact sensitive data in console output
-          const redactedMeta = { ...meta };
-          if (redactedMeta.eventData) {
-            redactedMeta.eventData = "[REDACTED]";
+        winston.format.timestamp(),
+        winston.format.printf(
+          ({ timestamp, level, message, logType, ...meta }) => {
+            // Redact sensitive data in console output
+            const redactedMeta = { ...meta };
+            if (redactedMeta.eventData) {
+              redactedMeta.eventData = "[REDACTED]";
+            }
+            return JSON.stringify({
+              timestamp,
+              level,
+              message,
+              logType: "protected",
+              ...redactedMeta,
+            });
           }
-          return `${timestamp} [${level}]: ${message} ${JSON.stringify(
-            redactedMeta
-          )}`;
-        })
+        )
       ),
     }),
     // Write protected logs to application-protected.log

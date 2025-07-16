@@ -53,6 +53,13 @@ function processMessage(message) {
     const event = JSON.parse(message.value.toString());
     const timestamp = new Date().toLocaleString();
 
+    // Determine logType - use event's logType or determine based on event type
+    const logType =
+      event.logType ||
+      (event.type === "user_signup" || event.type === "user_signin"
+        ? "audit"
+        : "normal");
+
     // Use protected logger for payment events, regular logger for others
     const isPaymentEvent = event.type === "payment_processed";
     const logData = {
@@ -67,8 +74,15 @@ function processMessage(message) {
     };
 
     if (isPaymentEvent) {
+      // For payment events, use protected logger (logType is already set to "protected" in logger config)
+      // Remove any logType from event data to ensure it uses the logger's default
+      const { logType: eventLogType, ...eventDataWithoutLogType } =
+        logData.eventData;
+      logData.eventData = eventDataWithoutLogType;
       protectedLogger.info("Payment event received", logData);
     } else {
+      // For non-payment events, add logType to the log data
+      logData.logType = logType;
       logger.info("Message received", logData);
     }
 
@@ -80,12 +94,15 @@ function processMessage(message) {
     };
 
     if (isPaymentEvent) {
+      // For payment events, delay log data already has logType: "protected" from logger config
       protectedLogger.info("Payment processing delay calculated", delayLogData);
     } else {
+      // For non-payment events, add logType to delay log data
+      delayLogData.logType = logType;
       logger.info("Processing delay calculated", delayLogData);
     }
 
-    return { success: true, processingDelay, isPaymentEvent };
+    return { success: true, processingDelay, isPaymentEvent, logType };
   } catch (error) {
     logger.error("Error processing message", {
       error: error.message,
@@ -116,16 +133,23 @@ async function startConsuming() {
         const result = await processMessage(message);
 
         if (result.success) {
-          const successLogData = {
-            messageNumber: messageCount,
-            service: "consumer",
-          };
           if (result.isPaymentEvent) {
+            // For payment events, use protected logger (logType is already "protected")
+            const successLogData = {
+              messageNumber: messageCount,
+              service: "consumer",
+            };
             protectedLogger.info(
               "Payment message processed successfully",
               successLogData
             );
           } else {
+            // For non-payment events, add logType to success log data
+            const successLogData = {
+              messageNumber: messageCount,
+              logType: result.logType,
+              service: "consumer",
+            };
             logger.info("Message processed successfully", successLogData);
           }
         } else {

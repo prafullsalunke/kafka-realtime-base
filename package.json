@@ -19,7 +19,8 @@
     "logs:syslog": "./scripts/view-logs.sh syslog",
     "logs:events": "./scripts/view-logs.sh events",
     "logs:all": "./scripts/view-logs.sh all",
-    "logs:clean": "./scripts/view-logs.sh clean"
+    "logs:clean": "./scripts/view-logs.sh clean",
+    "test:loki": "node scripts/test-loki-api.js"
   },
   "keywords": [
     "kafka",

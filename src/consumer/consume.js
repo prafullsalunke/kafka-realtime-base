@@ -1,4 +1,5 @@
 import { consumer } from "../config/kafka.js";
+import logger, { protectedLogger } from "../config/logger.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -8,9 +9,12 @@ const topic = process.env.KAFKA_TOPIC || "events-log";
 async function connectConsumer() {
   try {
     await consumer.connect();
-    console.log("✅ Consumer connected successfully");
+    logger.info("Consumer connected successfully", { service: "consumer" });
   } catch (error) {
-    console.error("❌ Failed to connect consumer:", error);
+    logger.error("Failed to connect consumer", {
+      error: error.message,
+      service: "consumer",
+    });
     throw error;
   }
 }
@@ -18,9 +22,12 @@ async function connectConsumer() {
 async function disconnectConsumer() {
   try {
     await consumer.disconnect();
-    console.log("✅ Consumer disconnected successfully");
+    logger.info("Consumer disconnected successfully", { service: "consumer" });
   } catch (error) {
-    console.error("❌ Error disconnecting consumer:", error);
+    logger.error("Error disconnecting consumer", {
+      error: error.message,
+      service: "consumer",
+    });
   }
 }
 
@@ -30,9 +37,13 @@ async function subscribeToTopic() {
       topic,
       fromBeginning: false, // Start consuming from the latest offset
     });
-    console.log(`✅ Subscribed to topic: ${topic}`);
+    logger.info("Subscribed to topic", { topic, service: "consumer" });
   } catch (error) {
-    console.error("❌ Failed to subscribe to topic:", error);
+    logger.error("Failed to subscribe to topic", {
+      error: error.message,
+      topic,
+      service: "consumer",
+    });
     throw error;
   }
 }
@@ -42,28 +53,44 @@ function processMessage(message) {
     const event = JSON.parse(message.value.toString());
     const timestamp = new Date().toLocaleString();
 
-    console.log("\n📨 Message Received:");
-    console.log("=".repeat(50));
-    console.log(`📅 Timestamp: ${timestamp}`);
-    console.log(`🔑 Key: ${message.key?.toString() || "N/A"}`);
-    console.log(`📊 Partition: ${message.partition}`);
-    console.log(`📍 Offset: ${message.offset}`);
-    console.log(`📋 Event Type: ${event.type}`);
-    console.log(
-      `🆔 Event ID: ${
-        event.userId || event.orderId || event.paymentId || "N/A"
-      }`
-    );
-    console.log(`📝 Event Data:`, JSON.stringify(event, null, 2));
-    console.log("=".repeat(50));
+    // Use protected logger for payment events, regular logger for others
+    const isPaymentEvent = event.type === "payment_processed";
+    const logData = {
+      timestamp,
+      key: message.key?.toString() || "N/A",
+      partition: message.partition,
+      offset: message.offset,
+      eventType: event.type,
+      eventId: event.userId || event.orderId || event.paymentId || "N/A",
+      eventData: event,
+      service: "consumer",
+    };
+
+    if (isPaymentEvent) {
+      protectedLogger.info("Payment event received", logData);
+    } else {
+      logger.info("Message received", logData);
+    }
 
     // Simulate processing time (mimic real-world lag)
     const processingDelay = Math.random() * 2000 + 500; // 500ms to 2.5s
-    console.log(`⏱️  Processing delay: ${processingDelay.toFixed(0)}ms`);
+    const delayLogData = {
+      processingDelay: processingDelay.toFixed(0),
+      service: "consumer",
+    };
 
-    return { success: true, processingDelay };
+    if (isPaymentEvent) {
+      protectedLogger.info("Payment processing delay calculated", delayLogData);
+    } else {
+      logger.info("Processing delay calculated", delayLogData);
+    }
+
+    return { success: true, processingDelay, isPaymentEvent };
   } catch (error) {
-    console.error("❌ Error processing message:", error);
+    logger.error("Error processing message", {
+      error: error.message,
+      service: "consumer",
+    });
     return { success: false, error: error.message };
   }
 }
@@ -73,9 +100,7 @@ async function startConsuming() {
     await connectConsumer();
     await subscribeToTopic();
 
-    console.log("🎧 Starting to consume messages...");
-    console.log("Press Ctrl+C to stop the consumer");
-    console.log("=".repeat(60));
+    logger.info("Starting to consume messages", { topic, service: "consumer" });
 
     let messageCount = 0;
 
@@ -83,17 +108,32 @@ async function startConsuming() {
       eachMessage: async ({ topic, partition, message }) => {
         messageCount++;
 
-        console.log(`\n🔄 Processing message #${messageCount}`);
+        logger.info("Processing message", {
+          messageNumber: messageCount,
+          service: "consumer",
+        });
 
         const result = await processMessage(message);
 
         if (result.success) {
-          console.log(`✅ Message #${messageCount} processed successfully`);
+          const successLogData = {
+            messageNumber: messageCount,
+            service: "consumer",
+          };
+          if (result.isPaymentEvent) {
+            protectedLogger.info(
+              "Payment message processed successfully",
+              successLogData
+            );
+          } else {
+            logger.info("Message processed successfully", successLogData);
+          }
         } else {
-          console.error(
-            `❌ Message #${messageCount} processing failed:`,
-            result.error
-          );
+          logger.error("Message processing failed", {
+            messageNumber: messageCount,
+            error: result.error,
+            service: "consumer",
+          });
         }
 
         // Simulate the processing delay
@@ -121,10 +161,16 @@ async function startConsuming() {
       },
     });
   } catch (error) {
-    console.error("❌ Error in startConsuming:", error);
+    logger.error("Error in startConsuming", {
+      error: error.message,
+      service: "consumer",
+    });
 
     // Attempt to reconnect after a delay
-    console.log("🔄 Attempting to reconnect in 5 seconds...");
+    logger.info("Attempting to reconnect", {
+      delay: 5000,
+      service: "consumer",
+    });
     setTimeout(() => {
       disconnectConsumer().then(() => {
         startConsuming();
@@ -135,13 +181,17 @@ async function startConsuming() {
 
 // Graceful shutdown handling
 process.on("SIGINT", async () => {
-  console.log("\n🛑 Received SIGINT, shutting down gracefully...");
+  logger.info("Received SIGINT, shutting down gracefully", {
+    service: "consumer",
+  });
   await disconnectConsumer();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  console.log("\n🛑 Received SIGTERM, shutting down gracefully...");
+  logger.info("Received SIGTERM, shutting down gracefully", {
+    service: "consumer",
+  });
   await disconnectConsumer();
   process.exit(0);
 });

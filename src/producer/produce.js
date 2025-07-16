@@ -1,4 +1,5 @@
 import { producer } from "../config/kafka.js";
+import logger from "../config/logger.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -67,9 +68,12 @@ const sampleEvents = [
 async function connectProducer() {
   try {
     await producer.connect();
-    console.log("✅ Producer connected successfully");
+    logger.info("Producer connected successfully", { service: "producer" });
   } catch (error) {
-    console.error("❌ Failed to connect producer:", error);
+    logger.error("Failed to connect producer", {
+      error: error.message,
+      service: "producer",
+    });
     throw error;
   }
 }
@@ -77,9 +81,12 @@ async function connectProducer() {
 async function disconnectProducer() {
   try {
     await producer.disconnect();
-    console.log("✅ Producer disconnected successfully");
+    logger.info("Producer disconnected successfully", { service: "producer" });
   } catch (error) {
-    console.error("❌ Error disconnecting producer:", error);
+    logger.error("Error disconnecting producer", {
+      error: error.message,
+      service: "producer",
+    });
   }
 }
 
@@ -98,28 +105,39 @@ async function publishEvent(event, retryCount = 0) {
       ],
     });
 
-    console.log(`✅ Event published successfully:`, {
+    logger.info("Event published successfully", {
       type: event.type,
       partition: result[0].partition,
       offset: result[0].baseOffset,
       timestamp: new Date().toISOString(),
+      service: "producer",
     });
 
     return result;
   } catch (error) {
-    console.error(
-      `❌ Failed to publish event (attempt ${retryCount + 1}):`,
-      error.message
-    );
+    logger.error("Failed to publish event", {
+      attempt: retryCount + 1,
+      error: error.message,
+      eventType: event.type,
+      service: "producer",
+    });
 
     if (retryCount < maxRetries) {
-      console.log(`🔄 Retrying in ${Math.pow(2, retryCount) * 1000}ms...`);
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.pow(2, retryCount) * 1000)
-      );
+      const delay = Math.pow(2, retryCount) * 1000;
+      logger.info("Retrying event publication", {
+        attempt: retryCount + 1,
+        delay,
+        eventType: event.type,
+        service: "producer",
+      });
+      await new Promise((resolve) => setTimeout(resolve, delay));
       return publishEvent(event, retryCount + 1);
     } else {
-      console.error(`❌ Max retries exceeded for event: ${event.type}`);
+      logger.error("Max retries exceeded for event", {
+        eventType: event.type,
+        maxRetries,
+        service: "producer",
+      });
       throw error;
     }
   }
@@ -129,10 +147,11 @@ async function publishEvents() {
   try {
     await connectProducer();
 
-    console.log(
-      `🚀 Starting to publish ${sampleEvents.length} events to topic: ${topic}`
-    );
-    console.log("=".repeat(60));
+    logger.info("Starting to publish events", {
+      count: sampleEvents.length,
+      topic,
+      service: "producer",
+    });
 
     for (const event of sampleEvents) {
       await publishEvent(event);
@@ -141,10 +160,16 @@ async function publishEvents() {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    console.log("=".repeat(60));
-    console.log(`✅ Successfully published ${sampleEvents.length} events`);
+    logger.info("Successfully published all events", {
+      count: sampleEvents.length,
+      topic,
+      service: "producer",
+    });
   } catch (error) {
-    console.error("❌ Error in publishEvents:", error);
+    logger.error("Error in publishEvents", {
+      error: error.message,
+      service: "producer",
+    });
     process.exit(1);
   } finally {
     await disconnectProducer();

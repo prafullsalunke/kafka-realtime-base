@@ -1,0 +1,74 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Merged application logs (both regular and protected)
+  - job_name: application-logs-merged
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: application-merged
+          __path__: /var/log/application/application.log
+      - targets:
+          - localhost
+        labels:
+          job: application-merged
+          __path__: /var/log/application/application-protected.log
+
+  # Individual application logs (for separate viewing if needed)
+  - job_name: application-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: application
+          __path__: /var/log/application/*.log
+
+  - job_name: kafka-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: kafka
+          __path__: /var/log/kafka-logs/*.log
+
+  - job_name: kafka-ui-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: kafka-ui
+          __path__: /var/log/kafka-ui/*.log
+
+  - job_name: syslog-ng-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog-ng
+          __path__: /var/log/syslog-ng/*.log
+
+  - job_name: events-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: events
+          __path__: /var/log/events/*.log
+
+  - job_name: all-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: all-logs
+          __path__: /var/log/**/*.log
+          __path_exclude__: /var/log/kafka/**/*.log 

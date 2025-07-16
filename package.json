@@ -1,0 +1,44 @@
+{
+  "name": "kafka-node-events",
+  "version": "1.0.0",
+  "description": "Kafka event-streaming example using Node.js and Docker Compose",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "produce": "node src/producer/produce.js",
+    "consume": "node src/consumer/consume.js",
+    "dev": "nodemon src/index.js",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart",
+    "setup": "npm run docker:up && sleep 10 && npm run produce",
+    "logs:kafka": "./scripts/view-logs.sh kafka",
+    "logs:ui": "./scripts/view-logs.sh kafka-ui",
+    "logs:syslog": "./scripts/view-logs.sh syslog",
+    "logs:events": "./scripts/view-logs.sh events",
+    "logs:all": "./scripts/view-logs.sh all",
+    "logs:clean": "./scripts/view-logs.sh clean"
+  },
+  "keywords": [
+    "kafka",
+    "nodejs",
+    "event-streaming",
+    "docker",
+    "kafkajs"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

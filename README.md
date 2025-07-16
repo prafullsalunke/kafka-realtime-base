@@ -11,6 +11,8 @@ A comprehensive Kafka event-streaming example using **Node.js** and **Docker Com
 - **Kafdrop UI**: Web-based Kafka management interface
 - **Sample Events**: Realistic e-commerce event examples
 - **Environment Configuration**: Flexible configuration via environment variables
+- **🔒 Protected Data Logging**: Separate handling of sensitive events with unified monitoring
+- **📊 Grafana + Loki**: Advanced log aggregation and visualization
 
 ## 📋 Prerequisites
 
@@ -57,31 +59,69 @@ npm run docker:logs
 npm start
 ```
 
+## 🔒 Protected Data Logging Feature
+
+This project includes advanced logging capabilities for handling sensitive data:
+
+### Key Features
+- **Dual Logging System**: Regular events and sensitive events are logged separately
+- **Automatic Routing**: Payment events automatically go to protected log files
+- **Console Redaction**: Sensitive data is redacted in console output
+- **Unified Monitoring**: Both log types appear merged in Grafana for easy monitoring
+- **Security Ready**: Separate access controls and compliance features
+
+### Quick Demo
+```bash
+# Start services
+npm run docker:up
+
+# Generate events (including payment events)
+npm run produce
+
+# Process events (payment events go to protected logs)
+npm run consume &
+
+# View in Grafana: http://localhost:3000 (admin/admin)
+# Query: {job="application-merged"}
+```
+
+### Documentation
+- **[Complete Guide](docs/KAFKA_EVENT_LOGGING_WITH_PROTECTED_DATA.md)** - Detailed documentation
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Commands and queries
+
 ## 📁 Project Structure
 
 ```
 kafka-node-events/
 │
-├── docker-compose.yml          # Kafka & Syslog-ng setup
+├── docker-compose.yml          # Kafka & monitoring setup
 ├── env.example                 # Environment configuration template
 ├── package.json               # Node.js dependencies and scripts
 ├── config/
-│   └── syslog-ng.conf         # Syslog-ng configuration
+│   ├── syslog-ng.conf         # Syslog-ng configuration
+│   ├── promtail-config.yaml   # Log collection configuration
+│   ├── loki-config.yaml       # Loki configuration
+│   └── grafana-datasources.yaml # Grafana data sources
 ├── scripts/
 │   └── view-logs.sh           # Log viewer script
 ├── logs/                      # 📍 LOCAL LOG STORAGE (gitignored)
 │   ├── kafka/                 # Kafka data and logs
 │   ├── kafka-logs/            # Kafka application logs
 │   ├── kafka-ui/              # Kafka UI logs
-│   └── syslog-ng/             # Syslog-ng centralized logs
+│   ├── syslog-ng/             # Syslog-ng centralized logs
+│   └── application/           # Application logs (regular + protected)
 ├── src/
 │   ├── config/
-│   │   └── kafka.js           # Kafka client configuration
+│   │   ├── kafka.js           # Kafka client configuration
+│   │   └── logger.js          # Winston logger setup
 │   ├── producer/
 │   │   └── produce.js         # Event publishing logic
 │   ├── consumer/
 │   │   └── consume.js         # Message consumption logic
 │   └── index.js               # Main demo entry point
+├── docs/
+│   ├── KAFKA_EVENT_LOGGING_WITH_PROTECTED_DATA.md # Complete guide
+│   └── QUICK_REFERENCE.md     # Quick reference
 └── README.md                  # This file
 ```
 
